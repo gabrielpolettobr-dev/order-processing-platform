@@ -1,6 +1,6 @@
 package com.challenge.order_processing_api.repository;
 
-import com.challenge.order_processing_api.model.Order;
+import com.challenge.order_processing_api.model.entity.Order;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;

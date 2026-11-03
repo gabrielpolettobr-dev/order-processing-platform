@@ -22,7 +22,7 @@ flowchart LR
     DLX --> DLQ[orders.dlq]
 ```
 
-`OrderApi` documenta o contrato HTTP com OpenAPI. `OrderController` é a implementação e concentra os mapeamentos das rotas. Serviços coordenam os casos de uso; repositories persistem entidades; o pacote `messaging` contém publicação, consumer e recuperação de mensagens, enquanto a topologia RabbitMQ fica centralizada em `config`.
+`OrderApi` documenta o contrato HTTP com OpenAPI. `OrderController` é a implementação e concentra os mapeamentos das rotas. Serviços coordenam os casos de uso; repositories persistem entidades. O pacote `messaging` separa `producer`, `consumer` e `dto`; a topologia RabbitMQ permanece em `config`. `OrderMapper` usa MapStruct para converter entidades e DTOs da API, mantendo cálculos e regras de negócio nas entidades.
 
 ## Camadas
 
@@ -31,10 +31,11 @@ flowchart LR
 | `controller` | Rotas REST e contrato documentado |
 | `service` | Criação, consulta e transições de processamento |
 | `repository` | Acesso a pedidos e eventos Outbox |
-| `model` | Entidades persistidas e status |
-| `dto` | Contratos HTTP e mensagem RabbitMQ |
-| `messaging` | Topologia, publicação Outbox, consumo, retry e DLQ |
+| `model.entity` / `model.enums` | Entidades JPA e enums do domínio, separados por tipo |
+| `dto.request` / `dto.response` | Contratos HTTP |
+| `messaging.producer` / `messaging.consumer` / `messaging.dto` | Publicação e reserva Outbox; consumo, retry e recuperação; contrato de mensagem RabbitMQ |
+| `mapper` | Conversão entre entidades e DTOs com MapStruct |
 | `exception` | Erros HTTP padronizados |
-| `config` | Configurações centralizadas de RabbitMQ, OpenAPI/Swagger e agendamento |
+| `config` | Configuração centralizada de Jackson, RabbitMQ, OpenAPI/Swagger e agendamento |
 
 Erros usam `ProblemDetail` do Spring, compatível com RFC 9457. `fieldErrors` e `timestamp` são extensões documentadas para a API.

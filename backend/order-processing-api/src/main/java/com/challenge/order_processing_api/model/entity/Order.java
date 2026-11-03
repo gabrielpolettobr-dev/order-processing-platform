@@ -1,4 +1,4 @@
-package com.challenge.order_processing_api.model;
+package com.challenge.order_processing_api.model.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -11,6 +11,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import com.challenge.order_processing_api.exception.InvalidOrderException;
+import com.challenge.order_processing_api.model.enums.OrderStatus;
 import lombok.AccessLevel;
 import lombok.Getter;
 

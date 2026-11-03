@@ -1,16 +1,16 @@
 package com.challenge.order_processing_api.service;
 
 import com.challenge.order_processing_api.dto.request.CreateOrderRequest;
-import com.challenge.order_processing_api.dto.response.OrderMessage;
 import com.challenge.order_processing_api.dto.response.OrderResponse;
 import com.challenge.order_processing_api.config.OrdersProperties;
 import com.challenge.order_processing_api.exception.InvalidOrderQueryException;
 import com.challenge.order_processing_api.exception.OrderNotFoundException;
 import com.challenge.order_processing_api.exception.OrderEventSerializationException;
-import com.challenge.order_processing_api.model.Order;
-import com.challenge.order_processing_api.model.OrderItem;
-import com.challenge.order_processing_api.model.OrderStatus;
-import com.challenge.order_processing_api.model.OutboxEvent;
+import com.challenge.order_processing_api.mapper.OrderMapper;
+import com.challenge.order_processing_api.messaging.dto.OrderMessage;
+import com.challenge.order_processing_api.model.entity.Order;
+import com.challenge.order_processing_api.model.entity.OutboxEvent;
+import com.challenge.order_processing_api.model.enums.OrderStatus;
 import com.challenge.order_processing_api.repository.OrderRepository;
 import com.challenge.order_processing_api.repository.OutboxEventRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -38,25 +38,25 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final OrderMapper orderMapper;
     private final OrdersProperties.Pagination paginationProperties;
 
     public OrderService(
             OrderRepository orderRepository,
             OutboxEventRepository outboxEventRepository,
             ObjectMapper objectMapper,
+            OrderMapper orderMapper,
             OrdersProperties ordersProperties) {
         this.orderRepository = orderRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
+        this.orderMapper = orderMapper;
         this.paginationProperties = ordersProperties.pagination();
     }
 
     @Transactional
     public OrderResponse create(CreateOrderRequest request) {
-        var items = request.items().stream()
-                .map(item -> new OrderItem(item.description(), item.quantity(), item.unitPrice()))
-                .toList();
-        Order order = orderRepository.save(new Order(request.customerName(), request.customerEmail(), items));
+        Order order = orderRepository.save(orderMapper.toEntity(request));
         try {
             String payload = objectMapper.writeValueAsString(new OrderMessage(order.getId()));
             outboxEventRepository.save(new OutboxEvent(order.getId(), "ORDER_CREATED", payload));
@@ -65,13 +65,13 @@ public class OrderService {
                     "Não foi possível serializar o evento do pedido.", exception);
         }
         logger.info("Pedido {} criado.", order.getId());
-        return OrderResponse.from(order);
+        return orderMapper.toResponse(order);
     }
 
     @Transactional(readOnly = true)
     public OrderResponse findById(UUID id) {
         return orderRepository.findById(id)
-                .map(OrderResponse::from)
+                .map(orderMapper::toResponse)
                 .orElseThrow(() -> new OrderNotFoundException(id));
     }
 
@@ -85,7 +85,7 @@ public class OrderService {
         validateCreationPeriod(createdFrom, createdTo);
 
         return orderRepository.findAll(buildSpecification(status, createdFrom, createdTo), pageable)
-                .map(OrderResponse::from);
+                .map(orderMapper::toResponse);
     }
 
     private void validatePageable(Pageable pageable) {

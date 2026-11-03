@@ -1,4 +1,4 @@
-package com.challenge.order_processing_api.dto.response;
+package com.challenge.order_processing_api.messaging.dto;
 
 import java.util.UUID;
 

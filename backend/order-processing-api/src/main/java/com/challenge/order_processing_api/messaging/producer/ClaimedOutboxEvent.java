@@ -1,4 +1,4 @@
-package com.challenge.order_processing_api.service;
+package com.challenge.order_processing_api.messaging.producer;
 
 import java.util.UUID;
 

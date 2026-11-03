@@ -1,7 +1,8 @@
-package com.challenge.order_processing_api.model;
+package com.challenge.order_processing_api.model.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.challenge.order_processing_api.model.enums.OrderStatus;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;

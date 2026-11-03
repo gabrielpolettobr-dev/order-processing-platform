@@ -10,8 +10,9 @@ import static org.mockito.Mockito.when;
 import com.challenge.order_processing_api.dto.request.CreateOrderItemRequest;
 import com.challenge.order_processing_api.dto.request.CreateOrderRequest;
 import com.challenge.order_processing_api.exception.InvalidOrderQueryException;
-import com.challenge.order_processing_api.model.Order;
-import com.challenge.order_processing_api.model.OutboxEvent;
+import com.challenge.order_processing_api.mapper.OrderMapper;
+import com.challenge.order_processing_api.model.entity.Order;
+import com.challenge.order_processing_api.model.entity.OutboxEvent;
 import com.challenge.order_processing_api.repository.OrderRepository;
 import com.challenge.order_processing_api.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,10 +40,16 @@ class OrderServiceTest {
     private OrderService orderService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final OrderMapper orderMapper = Mappers.getMapper(OrderMapper.class);
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, outboxEventRepository, objectMapper, defaults());
+        orderService = new OrderService(
+                orderRepository,
+                outboxEventRepository,
+                objectMapper,
+                orderMapper,
+                defaults());
     }
 
     @Test

@@ -1,6 +1,7 @@
-package com.challenge.order_processing_api.service;
+package com.challenge.order_processing_api.messaging.producer;
 
 import com.challenge.order_processing_api.config.OrdersProperties;
+import com.challenge.order_processing_api.model.entity.OutboxEvent;
 import com.challenge.order_processing_api.repository.OutboxEventRepository;
 import java.time.Duration;
 import java.time.Instant;

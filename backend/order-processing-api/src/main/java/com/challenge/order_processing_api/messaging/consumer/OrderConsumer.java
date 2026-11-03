@@ -1,6 +1,6 @@
-package com.challenge.order_processing_api.messaging;
+package com.challenge.order_processing_api.messaging.consumer;
 
-import com.challenge.order_processing_api.dto.response.OrderMessage;
+import com.challenge.order_processing_api.messaging.dto.OrderMessage;
 import com.challenge.order_processing_api.service.OrderProcessingService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;

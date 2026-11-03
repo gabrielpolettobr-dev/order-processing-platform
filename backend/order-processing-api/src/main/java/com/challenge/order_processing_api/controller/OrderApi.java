@@ -2,7 +2,7 @@ package com.challenge.order_processing_api.controller;
 
 import com.challenge.order_processing_api.dto.request.CreateOrderRequest;
 import com.challenge.order_processing_api.dto.response.OrderResponse;
-import com.challenge.order_processing_api.model.OrderStatus;
+import com.challenge.order_processing_api.model.enums.OrderStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

@@ -1,4 +1,4 @@
-package com.challenge.order_processing_api.messaging;
+package com.challenge.order_processing_api.messaging.producer;
 
 import static com.challenge.order_processing_api.TestOrdersProperties.defaults;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,9 +8,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.challenge.order_processing_api.dto.response.OrderMessage;
-import com.challenge.order_processing_api.service.ClaimedOutboxEvent;
-import com.challenge.order_processing_api.service.OutboxClaimService;
+import com.challenge.order_processing_api.messaging.dto.OrderMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,7 +42,7 @@ class OutboxPublisherTest {
             correlationData.getFuture().complete(new CorrelationData.Confirm(true, null));
             return null;
         }).when(rabbitTemplate).convertAndSend(
-                anyString(), anyString(), any(com.challenge.order_processing_api.dto.response.OrderMessage.class),
+                anyString(), anyString(), any(OrderMessage.class),
                 any(CorrelationData.class));
 
         OutboxPublisher publisher = new OutboxPublisher(

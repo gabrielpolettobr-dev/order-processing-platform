@@ -1,6 +1,6 @@
 package com.challenge.order_processing_api.repository;
 
-import com.challenge.order_processing_api.model.OutboxEvent;
+import com.challenge.order_processing_api.model.entity.OutboxEvent;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.Optional;

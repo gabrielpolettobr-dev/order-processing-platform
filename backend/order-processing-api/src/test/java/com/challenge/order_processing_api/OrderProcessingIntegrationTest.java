@@ -5,23 +5,24 @@ import static org.awaitility.Awaitility.await;
 
 import com.challenge.order_processing_api.dto.request.CreateOrderItemRequest;
 import com.challenge.order_processing_api.dto.request.CreateOrderRequest;
-import com.challenge.order_processing_api.dto.response.OrderMessage;
 import com.challenge.order_processing_api.dto.response.OrderResponse;
 import com.challenge.order_processing_api.config.OrdersProperties;
-import com.challenge.order_processing_api.model.Order;
-import com.challenge.order_processing_api.model.OrderItem;
-import com.challenge.order_processing_api.model.OrderStatus;
-import com.challenge.order_processing_api.model.OutboxEvent;
+import com.challenge.order_processing_api.messaging.dto.OrderMessage;
+import com.challenge.order_processing_api.messaging.producer.ClaimedOutboxEvent;
+import com.challenge.order_processing_api.messaging.producer.OutboxClaimService;
+import com.challenge.order_processing_api.messaging.producer.OutboxPublisher;
+import com.challenge.order_processing_api.model.entity.Order;
+import com.challenge.order_processing_api.model.entity.OrderItem;
+import com.challenge.order_processing_api.model.entity.OutboxEvent;
+import com.challenge.order_processing_api.model.enums.OrderStatus;
 import com.challenge.order_processing_api.repository.OrderRepository;
 import com.challenge.order_processing_api.repository.OutboxEventRepository;
-import com.challenge.order_processing_api.service.ClaimedOutboxEvent;
-import com.challenge.order_processing_api.service.OutboxClaimService;
 import com.challenge.order_processing_api.service.OrderProcessingStateService;
-import com.challenge.order_processing_api.messaging.OutboxPublisher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -215,7 +216,14 @@ class OrderProcessingIntegrationTest {
         assertThat(tooLarge.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(tooLarge.getBody()).contains("\"detail\":\"O tamanho da página deve estar entre 1 e 100.\"");
         assertThat(unsupportedSort.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(unsupportedSort.getBody()).contains("Ordenação não permitida");
+        assertThat(unsupportedSort.getBody()).contains("Campo de ordenação não permitido.");
+    }
+
+    @Test
+    void configuresJacksonToSerializeInstantsAsIso8601() throws Exception {
+        String serialized = objectMapper.writeValueAsString(Instant.parse("2026-11-03T00:00:00Z"));
+
+        assertThat(serialized).isEqualTo("\"2026-11-03T00:00:00Z\"");
     }
 
     @Test

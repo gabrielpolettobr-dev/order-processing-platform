@@ -2,8 +2,8 @@ package com.challenge.order_processing_api.service;
 
 import com.challenge.order_processing_api.config.OrdersProperties;
 import com.challenge.order_processing_api.exception.OrderNotFoundException;
-import com.challenge.order_processing_api.model.Order;
-import com.challenge.order_processing_api.model.OrderStatus;
+import com.challenge.order_processing_api.model.entity.Order;
+import com.challenge.order_processing_api.model.enums.OrderStatus;
 import com.challenge.order_processing_api.repository.OrderRepository;
 import java.time.Duration;
 import java.time.Instant;

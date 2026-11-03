@@ -1,6 +1,6 @@
 package com.challenge.order_processing_api.config;
 
-import com.challenge.order_processing_api.messaging.OrderMessageRecoverer;
+import com.challenge.order_processing_api.messaging.consumer.OrderMessageRecoverer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;

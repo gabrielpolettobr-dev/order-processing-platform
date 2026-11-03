@@ -1,6 +1,6 @@
-package com.challenge.order_processing_api.messaging;
+package com.challenge.order_processing_api.messaging.consumer;
 
-import com.challenge.order_processing_api.dto.response.OrderMessage;
+import com.challenge.order_processing_api.messaging.dto.OrderMessage;
 import com.challenge.order_processing_api.service.OrderProcessingStateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;

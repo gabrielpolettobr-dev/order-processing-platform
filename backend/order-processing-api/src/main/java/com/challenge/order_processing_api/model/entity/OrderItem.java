@@ -1,4 +1,4 @@
-package com.challenge.order_processing_api.model;
+package com.challenge.order_processing_api.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

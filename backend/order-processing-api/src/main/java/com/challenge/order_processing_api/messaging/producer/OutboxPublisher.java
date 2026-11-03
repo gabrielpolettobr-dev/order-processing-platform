@@ -1,9 +1,7 @@
-package com.challenge.order_processing_api.messaging;
+package com.challenge.order_processing_api.messaging.producer;
 
 import com.challenge.order_processing_api.config.OrdersProperties;
-import com.challenge.order_processing_api.dto.response.OrderMessage;
-import com.challenge.order_processing_api.service.ClaimedOutboxEvent;
-import com.challenge.order_processing_api.service.OutboxClaimService;
+import com.challenge.order_processing_api.messaging.dto.OrderMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;

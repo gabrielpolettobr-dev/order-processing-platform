@@ -1,6 +1,6 @@
 package com.challenge.order_processing_api.config;
 
-import com.challenge.order_processing_api.messaging.OutboxPublisher;
+import com.challenge.order_processing_api.messaging.producer.OutboxPublisher;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
