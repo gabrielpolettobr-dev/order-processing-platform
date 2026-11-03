@@ -59,6 +59,7 @@ orders:
     max-page-size: ${ORDERS_MAX_PAGE_SIZE:100}
   outbox:
     poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:1000}
+    claim-timeout: ${OUTBOX_CLAIM_TIMEOUT:PT30S}
   rabbitmq:
     exchange: ${ORDERS_RABBITMQ_EXCHANGE:orders.exchange}
     queue: ${ORDERS_RABBITMQ_QUEUE:orders.queue}

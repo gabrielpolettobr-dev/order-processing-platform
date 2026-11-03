@@ -13,6 +13,8 @@ import com.challenge.order_processing_api.model.OrderStatus;
 import com.challenge.order_processing_api.model.OutboxEvent;
 import com.challenge.order_processing_api.repository.OrderRepository;
 import com.challenge.order_processing_api.repository.OutboxEventRepository;
+import com.challenge.order_processing_api.service.ClaimedOutboxEvent;
+import com.challenge.order_processing_api.service.OutboxClaimService;
 import com.challenge.order_processing_api.service.OrderProcessingStateService;
 import com.challenge.order_processing_api.messaging.OutboxPublisher;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,8 +36,6 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -101,7 +101,7 @@ class OrderProcessingIntegrationTest {
     private OrderProcessingStateService processingStateService;
 
     @Autowired
-    private PlatformTransactionManager transactionManager;
+    private OutboxClaimService outboxClaimService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -117,8 +117,8 @@ class OrderProcessingIntegrationTest {
     @Test
     void flywayMigrationAndOrderLifecycleWorkAgainstPostgresAndRabbitMq() {
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT version FROM flyway_schema_history WHERE success = true ORDER BY installed_rank LIMIT 1",
-                String.class)).isEqualTo("1");
+                "SELECT version FROM flyway_schema_history WHERE success = true ORDER BY installed_rank DESC LIMIT 1",
+                String.class)).isEqualTo("2");
 
         ResponseEntity<OrderResponse> created = restTemplate.postForEntity(
                 "/api/orders",
@@ -263,7 +263,7 @@ class OrderProcessingIntegrationTest {
     }
 
     @Test
-    void outboxClaimSkipsRowsLockedByAnotherPublisherTransaction() throws Exception {
+    void outboxClaimsPreventConcurrentPublishingAndRecoverAfterLeaseExpiry() throws Exception {
         Order order = orderRepository.saveAndFlush(new Order(
                 "Outbox Concurrency",
                 "outbox@example.com",
@@ -273,34 +273,33 @@ class OrderProcessingIntegrationTest {
                 "ORDER_CREATED",
                 "{\"orderId\":\"" + order.getId() + "\"}"));
 
-        CountDownLatch rowLocked = new CountDownLatch(1);
-        CountDownLatch releaseLock = new CountDownLatch(1);
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        var executor = Executors.newSingleThreadExecutor();
+        CountDownLatch start = new CountDownLatch(1);
+        var executor = Executors.newFixedThreadPool(2);
         try {
-            var firstPublisher = executor.submit(() -> transactionTemplate.execute(status -> {
-                int claimed = outboxEventRepository.findPendingForUpdate().size();
-                rowLocked.countDown();
-                try {
-                    if (!releaseLock.await(5, TimeUnit.SECONDS)) {
-                        throw new IllegalStateException("Timed out waiting to release the Outbox row lock.");
-                    }
-                } catch (InterruptedException exception) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Outbox lock test was interrupted.", exception);
-                }
-                return claimed;
-            }));
+            var firstPublisher = executor.submit(() -> {
+                start.await();
+                return outboxClaimService.claimNext();
+            });
+            var secondPublisher = executor.submit(() -> {
+                start.await();
+                return outboxClaimService.claimNext();
+            });
+            start.countDown();
 
-            assertThat(rowLocked.await(5, TimeUnit.SECONDS)).isTrue();
-            int claimedBySecondPublisher = transactionTemplate.execute(
-                    status -> outboxEventRepository.findPendingForUpdate().size());
+            var firstClaim = firstPublisher.get(10, TimeUnit.SECONDS);
+            var secondClaim = secondPublisher.get(10, TimeUnit.SECONDS);
+            assertThat(firstClaim.isPresent() ^ secondClaim.isPresent()).isTrue();
+            ClaimedOutboxEvent originalClaim = firstClaim.orElseGet(secondClaim::orElseThrow);
+            assertThat(outboxClaimService.claimNext()).isEmpty();
 
-            assertThat(claimedBySecondPublisher).isZero();
-            releaseLock.countDown();
-            assertThat(firstPublisher.get(10, TimeUnit.SECONDS)).isEqualTo(1);
+            jdbcTemplate.update(
+                    "UPDATE outbox_events SET claim_expires_at = now() - interval '1 second' WHERE id = ?",
+                    originalClaim.id());
+            ClaimedOutboxEvent recoveredClaim = outboxClaimService.claimNext().orElseThrow();
+            assertThat(recoveredClaim.claimToken()).isNotEqualTo(originalClaim.claimToken());
+            assertThat(outboxClaimService.markPublished(originalClaim)).isFalse();
+            assertThat(outboxClaimService.markPublished(recoveredClaim)).isTrue();
         } finally {
-            releaseLock.countDown();
             executor.shutdownNow();
         }
     }

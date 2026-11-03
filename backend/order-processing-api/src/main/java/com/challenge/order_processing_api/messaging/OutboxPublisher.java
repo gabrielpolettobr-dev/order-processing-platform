@@ -1,11 +1,11 @@
 package com.challenge.order_processing_api.messaging;
 
 import com.challenge.order_processing_api.dto.response.OrderMessage;
-import com.challenge.order_processing_api.model.OutboxEvent;
-import com.challenge.order_processing_api.repository.OutboxEventRepository;
+import com.challenge.order_processing_api.service.ClaimedOutboxEvent;
+import com.challenge.order_processing_api.service.OutboxClaimService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,26 +15,25 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class OutboxPublisher {
 
     private static final Logger logger = LoggerFactory.getLogger(OutboxPublisher.class);
 
-    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxClaimService outboxClaimService;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
     private final String exchange;
     private final String routingKey;
 
     public OutboxPublisher(
-            OutboxEventRepository outboxEventRepository,
+            OutboxClaimService outboxClaimService,
             RabbitTemplate rabbitTemplate,
             ObjectMapper objectMapper,
             @Value("${orders.rabbitmq.exchange}") String exchange,
             @Value("${orders.rabbitmq.routing-key}") String routingKey) {
-        this.outboxEventRepository = outboxEventRepository;
+        this.outboxClaimService = outboxClaimService;
         this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
         this.exchange = exchange;
@@ -42,36 +41,47 @@ public class OutboxPublisher {
     }
 
     @Scheduled(fixedDelayString = "${orders.outbox.poll-interval-ms:1000}")
-    @Transactional
     public void publishPendingEvents() {
-        List<OutboxEvent> events = outboxEventRepository.findPendingForUpdate();
-        for (OutboxEvent event : events) {
+        Optional<ClaimedOutboxEvent> nextEvent = outboxClaimService.claimNext();
+        while (nextEvent.isPresent()) {
+            ClaimedOutboxEvent event = nextEvent.get();
             try {
-                OrderMessage message = objectMapper.readValue(event.getPayload(), OrderMessage.class);
+                OrderMessage message = objectMapper.readValue(event.payload(), OrderMessage.class);
                 publish(event, message);
-                event.markPublished();
+                if (!outboxClaimService.markPublished(event)) {
+                    logger.warn("Evento Outbox {} foi publicado, mas sua reserva expirou antes da confirmação local.",
+                            event.id());
+                }
             } catch (JsonProcessingException exception) {
-                logger.error("Evento Outbox {} possui payload inválido e não foi publicado.", event.getId(), exception);
+                logFailure(event, "possui payload inválido; será retomado após expirar a reserva", exception);
+                return;
             } catch (InterruptedException exception) {
+                outboxClaimService.releaseClaim(event);
                 Thread.currentThread().interrupt();
-                logger.error("Publicação do evento Outbox {} foi interrompida.", event.getId(), exception);
+                logger.error("Publicação do evento Outbox {} foi interrompida.", event.id(), exception);
                 return;
             } catch (Exception exception) {
-                logger.error("Falha ao publicar evento Outbox {}. Ele será tentado novamente.", event.getId(), exception);
+                logFailure(event, "falhou ao publicar; será retomado após expirar a reserva", exception);
+                return;
             }
+            nextEvent = outboxClaimService.claimNext();
         }
     }
 
-    private void publish(OutboxEvent event, OrderMessage message) throws Exception {
-        CorrelationData correlationData = new CorrelationData(event.getId().toString());
+    private void logFailure(ClaimedOutboxEvent event, String message, Exception exception) {
+        logger.error("Evento Outbox {} {}.", event.id(), message, exception);
+    }
+
+    private void publish(ClaimedOutboxEvent event, OrderMessage message) throws Exception {
+        CorrelationData correlationData = new CorrelationData(event.id().toString());
         rabbitTemplate.convertAndSend(exchange, routingKey, message, correlationData);
         CorrelationData.Confirm confirmation = correlationData.getFuture().get(5, TimeUnit.SECONDS);
         if (!confirmation.isAck()) {
-            throw new AmqpException("RabbitMQ rejeitou a publicação do evento " + event.getId()
+            throw new AmqpException("RabbitMQ rejeitou a publicação do evento " + event.id()
                     + ": " + confirmation.getReason());
         }
         if (correlationData.getReturned() != null) {
-            throw new AmqpException("RabbitMQ não roteou o evento " + event.getId());
+            throw new AmqpException("RabbitMQ não roteou o evento " + event.id());
         }
     }
 }

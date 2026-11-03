@@ -22,7 +22,7 @@ O Compose inicia PostgreSQL, RabbitMQ e API, aguarda os health checks das depend
 | RabbitMQ AMQP | `localhost:5672` | `orders_user` / `rabbit_dev_password` |
 | RabbitMQ Management | `http://localhost:15672` | `orders_user` / `rabbit_dev_password` |
 
-As credenciais e parâmetros podem ser alterados pelas variáveis de ambiente do Compose. O arquivo `.env.example` contém as variáveis de banco e RabbitMQ; valores padrão de desenvolvimento permitem iniciar sem criar um `.env`.
+As credenciais e parâmetros podem ser alterados pelas variáveis de ambiente do Compose. O arquivo `.env.example` contém as variáveis de banco, RabbitMQ e processamento; `OUTBOX_CLAIM_TIMEOUT` controla por quanto tempo um evento fica reservado antes de poder ser recuperado por outra execução. Valores padrão de desenvolvimento permitem iniciar sem criar um `.env`.
 
 ## Executar testes do backend
 

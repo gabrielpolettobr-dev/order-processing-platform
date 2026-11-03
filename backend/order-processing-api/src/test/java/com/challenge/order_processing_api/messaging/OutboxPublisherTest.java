@@ -7,10 +7,11 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.challenge.order_processing_api.model.OutboxEvent;
-import com.challenge.order_processing_api.repository.OutboxEventRepository;
+import com.challenge.order_processing_api.dto.response.OrderMessage;
+import com.challenge.order_processing_api.service.ClaimedOutboxEvent;
+import com.challenge.order_processing_api.service.OutboxClaimService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
@@ -22,11 +23,16 @@ class OutboxPublisherTest {
 
     @Test
     void retriesAnOutboxEventAfterBrokerFailure() {
-        OutboxEventRepository repository = org.mockito.Mockito.mock(OutboxEventRepository.class);
+        OutboxClaimService claimService = org.mockito.Mockito.mock(OutboxClaimService.class);
         RabbitTemplate rabbitTemplate = org.mockito.Mockito.mock(RabbitTemplate.class);
-        OutboxEvent event = new OutboxEvent(UUID.randomUUID(), "ORDER_CREATED",
-                "{\"orderId\":\"" + UUID.randomUUID() + "\"}");
-        when(repository.findPendingForUpdate()).thenReturn(List.of(event));
+        UUID eventId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        ClaimedOutboxEvent firstClaim = new ClaimedOutboxEvent(
+                eventId, "{\"orderId\":\"" + orderId + "\"}", UUID.randomUUID());
+        ClaimedOutboxEvent retryClaim = new ClaimedOutboxEvent(
+                eventId, "{\"orderId\":\"" + orderId + "\"}", UUID.randomUUID());
+        when(claimService.claimNext())
+                .thenReturn(Optional.of(firstClaim), Optional.of(retryClaim), Optional.empty());
 
         AtomicInteger publishAttempts = new AtomicInteger();
         doAnswer(invocation -> {
@@ -41,13 +47,14 @@ class OutboxPublisherTest {
                 any(CorrelationData.class));
 
         OutboxPublisher publisher = new OutboxPublisher(
-                repository, rabbitTemplate, new ObjectMapper(), "orders.exchange", "orders.created");
+                claimService, rabbitTemplate, new ObjectMapper(), "orders.exchange", "orders.created");
 
         publisher.publishPendingEvents();
-        assertThat(event.getPublishedAt()).isNull();
+        verify(claimService, org.mockito.Mockito.never()).markPublished(firstClaim);
+        verify(claimService, org.mockito.Mockito.never()).releaseClaim(firstClaim);
 
         publisher.publishPendingEvents();
-        assertThat(event.getPublishedAt()).isNotNull();
-        verify(repository, org.mockito.Mockito.times(2)).findPendingForUpdate();
+        verify(claimService).markPublished(retryClaim);
+        verify(claimService, org.mockito.Mockito.times(3)).claimNext();
     }
 }

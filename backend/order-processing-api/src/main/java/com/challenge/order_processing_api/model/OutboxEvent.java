@@ -32,6 +32,12 @@ public class OutboxEvent {
     @Column(name = "published_at")
     private Instant publishedAt;
 
+    @Column(name = "claimed_by")
+    private UUID claimedBy;
+
+    @Column(name = "claim_expires_at")
+    private Instant claimExpiresAt;
+
     protected OutboxEvent() {
     }
 
@@ -43,8 +49,9 @@ public class OutboxEvent {
         this.createdAt = Instant.now();
     }
 
-    public void markPublished() {
-        this.publishedAt = Instant.now();
+    public void claim(UUID claimToken, Instant expiresAt) {
+        this.claimedBy = claimToken;
+        this.claimExpiresAt = expiresAt;
     }
 
 }
