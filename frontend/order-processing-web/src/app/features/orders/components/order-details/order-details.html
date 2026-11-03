@@ -1,0 +1,85 @@
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">ACOMPANHAMENTO</p>
+    <h1>Detalhes do pedido</h1>
+  </div>
+  <a class="text-link" routerLink="/orders">← Voltar aos pedidos</a>
+</section>
+
+@if (created) {
+  <div class="notice notice-success" role="status">Pedido recebido! O processamento será atualizado automaticamente.</div>
+}
+@if (error) {
+  <div class="notice notice-error" role="alert">
+    <span>{{ error }}</span>
+    <a class="text-link" routerLink="/orders">Voltar à listagem</a>
+  </div>
+}
+@if (loading && !order) {
+  <section class="panel loading-state" role="status" aria-live="polite">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <span>Carregando pedido…</span>
+  </section>
+}
+@if (order) {
+  <section class="panel details-summary">
+    <div>
+      <span class="muted">Identificador</span>
+      <code class="truncate" [title]="order.id">{{ order.id }}</code>
+    </div>
+    <div>
+      <span class="muted">Status atual</span>
+      <app-order-status [status]="order.status" />
+    </div>
+    <div>
+      <span class="muted">Criado em</span>
+      <strong>{{ order.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</strong>
+    </div>
+    <div>
+      <span class="muted">Última atualização</span>
+      <strong>{{ order.updatedAt | date:'dd/MM/yyyy HH:mm:ss' }}</strong>
+    </div>
+  </section>
+
+  <section class="panel progress-panel">
+    <h2>Etapas do processamento</h2>
+    <div class="steps" [class.steps-failed]="order.status === 'FAILED'">
+      <div [class]="stepClass('RECEIVED')"><span>1</span><strong>Recebido</strong></div>
+      <div [class]="stepClass('PROCESSING')"><span>2</span><strong>Processamento</strong></div>
+      <div [class]="stepClass('COMPLETED')"><span>3</span><strong>Concluído</strong></div>
+    </div>
+    @if (order.status === 'FAILED') {
+      <p class="failure-message">O processamento deste pedido foi finalizado com falha.</p>
+    } @else if (order.status === 'RECEIVED' || order.status === 'PROCESSING') {
+      <p class="muted polling-hint">Esta tela consulta o status automaticamente a cada 3 segundos.</p>
+    }
+  </section>
+
+  <section class="panel customer-panel">
+    <h2>Dados do cliente</h2>
+    <div class="customer-data">
+      <div><span class="muted">Nome</span><strong class="truncate" [title]="order.customerName">{{ order.customerName }}</strong></div>
+      <div><span class="muted">E-mail</span><strong class="truncate" [title]="order.customerEmail">{{ order.customerEmail }}</strong></div>
+    </div>
+  </section>
+
+  <section class="panel items-panel">
+    <h2>Itens do pedido</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Descrição</th><th>Quantidade</th><th>Preço unitário</th><th>Subtotal</th></tr></thead>
+        <tbody>
+          @for (item of order.items; track item.id) {
+            <tr>
+              <td><span class="truncate" [title]="item.description">{{ item.description }}</span></td>
+              <td><span class="truncate" [title]="item.quantity">{{ item.quantity }}</span></td>
+              <td><span class="truncate" [title]="item.unitPrice | currency:'BRL':'symbol':'1.2-2':'pt-BR'">{{ item.unitPrice | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span></td>
+              <td class="amount"><span class="truncate" [title]="item.subtotal | currency:'BRL':'symbol':'1.2-2':'pt-BR'">{{ item.subtotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="total-row"><span>Total do pedido</span><strong class="truncate" [title]="order.totalAmount | currency:'BRL':'symbol':'1.2-2':'pt-BR'">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong></div>
+  </section>
+}

@@ -1,0 +1,38 @@
+.details-summary { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; gap: 1rem; }
+.details-summary > div { display: flex; flex-direction: column; align-items: flex-start; gap: 0.55rem; min-width: 0; }
+.details-summary code { overflow-wrap: anywhere; }
+.muted { display: block; color: #748093; font-size: 0.85rem; }
+.progress-panel, .customer-panel, .items-panel { margin-top: 1.2rem; }
+.progress-panel h2, .customer-panel h2, .items-panel h2 { margin: 0 0 1.25rem; font-size: 1.05rem; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+.steps > div { display: flex; align-items: center; gap: 0.65rem; color: #8792a2; }
+.steps > div span { display: grid; place-items: center; width: 2rem; height: 2rem; border: 1px solid #dfe4eb; border-radius: 50%; font-weight: 700; }
+.steps .step-done { color: #17653a; }
+.steps .step-done span { background: #ddf5e8; border-color: #b6e4c9; }
+.steps .step-failed { color: #a52e28; }
+.steps .step-failed span { background: #fde4e2; border-color: #f3c1bd; }
+.polling-hint, .failure-message { margin: 1rem 0 0; }
+.failure-message { color: #a52e28; }
+.customer-data { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.customer-data > div { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
+.items-panel { padding: 0; overflow: hidden; }
+.items-panel h2 { padding: 1.25rem 1.25rem 0; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 520px; }
+th:nth-child(1), td:nth-child(1) { width: 40%; }
+th:nth-child(2), td:nth-child(2) { width: 15%; }
+th:nth-child(3), td:nth-child(3) { width: 22.5%; }
+th:nth-child(4), td:nth-child(4) { width: 22.5%; }
+th, td { padding: 0.9rem 1.25rem; text-align: left; border-bottom: 1px solid #edf0f4; }
+th { color: #697586; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; background: #fbfcfe; }
+.amount { font-weight: 700; }
+.total-row { display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; padding: 1.2rem 1.25rem; color: #697586; }
+.total-row strong { max-width: 60%; color: #183a65; font-size: 1.2rem; }
+
+@media (max-width: 760px) {
+  .details-summary { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .details-summary, .customer-data { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,88 @@
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">NOVO REGISTRO</p>
+    <h1>Criar pedido</h1>
+    <p class="muted">Informe o cliente e adicione um ou mais itens.</p>
+  </div>
+  <a class="text-link" routerLink="/orders">← Voltar aos pedidos</a>
+</section>
+
+@if (error) {
+  <div class="notice notice-error" role="alert">{{ error }}</div>
+}
+
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <section class="panel form-panel">
+    <h2>Dados do cliente</h2>
+    <div class="form-grid">
+      <label>
+        Nome do cliente
+        <input type="text" formControlName="customerName" autocomplete="name" placeholder="Ex.: Ana Silva" maxlength="200" [attr.title]="form.controls.customerName.value">
+        @if (form.controls.customerName.touched && form.controls.customerName.hasError('required')) {
+          <span class="field-error">Informe o nome do cliente.</span>
+        }
+      </label>
+      <label>
+        E-mail
+        <input type="email" formControlName="customerEmail" autocomplete="email" placeholder="ana@email.com" maxlength="320" [attr.title]="form.controls.customerEmail.value">
+        @if (form.controls.customerEmail.touched && form.controls.customerEmail.invalid) {
+          <span class="field-error">Informe um e-mail válido.</span>
+        }
+      </label>
+    </div>
+  </section>
+
+  <section class="panel form-panel item-panel">
+    <div class="section-title">
+      <div>
+        <h2>Itens do pedido</h2>
+        <p class="muted">O total é uma estimativa visual; o valor final e calculado pelo sistema.</p>
+      </div>
+      <button class="button button-secondary" type="button" (click)="addItem()">＋ Adicionar item</button>
+    </div>
+
+    <div formArrayName="items" class="items-list">
+      @for (item of items.controls; track $index; let index = $index) {
+        <div class="item-row" [formGroupName]="index">
+          <label class="description-field">
+            Descrição
+            <input type="text" formControlName="description" placeholder="Ex.: Teclado sem fio" maxlength="500" [attr.title]="item.controls.description.value">
+            @if (item.controls.description.touched && item.controls.description.invalid) {
+              <span class="field-error">Informe a descrição do item.</span>
+            }
+          </label>
+          <label>
+            Quantidade
+            <input type="number" formControlName="quantity" min="1" max="1000000" step="1" (input)="limitQuantity($event, item)" [attr.title]="item.controls.quantity.value">
+          </label>
+          <label>
+            Preço unitário
+            <input type="number" formControlName="unitPrice" min="0.01" max="99999999999999980" step="0.01" (input)="limitUnitPrice($event, item)" [attr.title]="item.controls.unitPrice.value">
+          </label>
+          <div class="subtotal">
+            <span>Subtotal</span>
+            <strong class="truncate" [title]="formatCurrency(itemSubtotal(item))">{{ formatCurrency(itemSubtotal(item)) }}</strong>
+          </div>
+          <button class="icon-button" type="button" (click)="removeItem(index)" [disabled]="items.length === 1" [attr.aria-label]="'Remover item ' + (index + 1)">×</button>
+        </div>
+      }
+    </div>
+
+    <div class="total-row">
+      <div class="total-summary">
+        <span>Total estimado</span>
+        <strong class="truncate" [title]="formatCurrency(total)">{{ formatCurrency(total) }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <a class="button button-secondary" routerLink="/orders">Cancelar</a>
+    <button class="button button-primary" type="submit" [disabled]="submitting" [attr.aria-busy]="submitting">
+      @if (submitting) {
+        <span class="loading-spinner button-spinner" aria-hidden="true"></span>
+      }
+      {{ submitting ? 'Enviando…' : 'Criar pedido' }}
+    </button>
+  </div>
+</form>

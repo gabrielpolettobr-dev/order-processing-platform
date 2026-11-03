@@ -1,0 +1,99 @@
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">OPERAÇÃO</p>
+    <h1>Pedidos</h1>
+    <p class="muted">Acompanhe os pedidos recebidos e o processamento.</p>
+  </div>
+  <a class="button button-primary" routerLink="/orders/new">＋ Novo pedido</a>
+</section>
+
+<section class="panel filters" aria-label="Filtros de pedidos">
+  <label>
+    Status
+    <select [(ngModel)]="status" (ngModelChange)="applyFilters()">
+      <option value="">Todos</option>
+      <option value="RECEIVED">Aguardando</option>
+      <option value="PROCESSING">Em processamento</option>
+      <option value="COMPLETED">Concluído</option>
+      <option value="FAILED">Falhou</option>
+    </select>
+  </label>
+  <label>
+    Criado a partir de
+    <input type="date" lang="pt-BR" [(ngModel)]="createdFrom" (ngModelChange)="applyFilters()">
+  </label>
+  <label>
+    Criado até
+    <input type="date" lang="pt-BR" [(ngModel)]="createdTo" (ngModelChange)="applyFilters()">
+  </label>
+  <label>
+    Ordenar por
+    <select [(ngModel)]="sort" (ngModelChange)="applyFilters()">
+      <option value="createdAt,desc">Mais recentes</option>
+      <option value="createdAt,asc">Mais antigos</option>
+      <option value="totalAmount,desc">Maior valor</option>
+      <option value="customerName,asc">Nome do cliente</option>
+    </select>
+  </label>
+  <button class="button button-secondary refresh-button" type="button" (click)="refresh()" [disabled]="loading">
+    Atualizar
+  </button>
+</section>
+
+@if (error) {
+  <div class="notice notice-error" role="alert">
+    <span>{{ error }}</span>
+    <button class="text-button" type="button" (click)="refresh()">Tentar novamente</button>
+  </div>
+}
+
+<section class="panel table-panel">
+  @if (loading && orders.length === 0) {
+    <div class="loading-state" role="status" aria-live="polite">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <span>Carregando pedidos…</span>
+    </div>
+  } @else if (!error && orders.length === 0) {
+    <div class="empty-state">
+      <strong>Nenhum pedido encontrado</strong>
+      <span>Experimente ajustar os filtros ou crie um novo pedido.</span>
+    </div>
+  } @else if (orders.length > 0) {
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Total</th>
+            <th>Criado em</th>
+            <th>Status</th>
+            <th><span class="visually-hidden">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders; track order.id) {
+            <tr>
+              <td><code class="truncate" [title]="order.id">{{ order.id }}</code></td>
+              <td>
+                <strong class="truncate" [title]="order.customerName">{{ order.customerName }}</strong>
+                <span class="cell-subtitle truncate" [title]="order.customerEmail">{{ order.customerEmail }}</span>
+              </td>
+              <td class="amount"><span class="truncate" [title]="order.totalAmount | currency:'BRL':'symbol':'1.2-2':'pt-BR'">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span></td>
+              <td>{{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td><app-order-status [status]="order.status" /></td>
+              <td><a class="text-link" [routerLink]="['/orders', order.id]">Detalhes</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer class="pagination">
+      <span>{{ page?.totalElements }} pedido(s) · Página {{ (page?.number ?? 0) + 1 }} de {{ page?.totalPages || 1 }}</span>
+      <div>
+        <button class="button button-secondary" type="button" (click)="goToPage((page?.number ?? 0) - 1)" [disabled]="!page || page.first">Anterior</button>
+        <button class="button button-secondary" type="button" (click)="goToPage((page?.number ?? 0) + 1)" [disabled]="!page || page.last">Próxima</button>
+      </div>
+    </footer>
+  }
+</section>

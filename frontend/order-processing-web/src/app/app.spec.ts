@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { App } from './app';
+import { routes } from './app.routes';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [provideRouter(routes)],
     })
       .compileComponents();
   });
@@ -15,10 +18,12 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('should render the application navigation', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, order-processing-web');
+    expect(compiled.querySelector('.brand')?.textContent).toContain('Chicken Orders');
+    expect(compiled.querySelector('.brand-logo')?.getAttribute('src')).toBe('chicken-logo.png');
+    expect(compiled.querySelector('nav')?.textContent).toContain('Pedidos');
   });
 });

@@ -1,59 +1,38 @@
-# OrderProcessingWeb
+# OrderFlow — Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+Interface Angular para cadastrar, consultar e acompanhar pedidos da plataforma.
 
-## Development server
+## Executar localmente
 
-To start a local development server, run:
+Com o backend disponível em `http://localhost:8080`, execute:
 
-```bash
-ng serve
+```powershell
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+A aplicação estará em `http://localhost:4200`. O proxy configurado em `proxy.conf.json` encaminha `/api` ao backend local, evitando configuração de CORS durante o desenvolvimento.
 
-## Code scaffolding
+## Funcionalidades
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- Listagem paginada, ordenação e filtros por status e período de criação.
+- Atualização manual e polling a cada 3 segundos enquanto existirem pedidos em `RECEIVED` ou `PROCESSING`.
+- Formulário com múltiplos itens, validações e cálculo informativo de subtotal/total. O total definitivo é sempre calculado pelo backend.
+- Detalhes do pedido com itens, valores, datas e acompanhamento visual das etapas.
+- Mensagens de carregamento, sucesso e erro.
 
-```bash
-ng generate component component-name
+## Organização
+
+- `core/models`: contratos de pedido, itens, filtros, página e status.
+- `features/orders/services`: comunicação HTTP reutilizável com `/api/orders`.
+- `features/orders/components`: telas standalone de listagem, formulário, detalhes e badge de status.
+- `app.routes.ts`: rotas lazy-loaded da aplicação.
+
+O acesso à API usa caminhos relativos (`/api`), de modo que em produção o servidor web do frontend pode encaminhar essas chamadas ao backend na mesma origem.
+
+## Validar
+
+```powershell
+npm test -- --watch=false
+npm run build
 ```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
