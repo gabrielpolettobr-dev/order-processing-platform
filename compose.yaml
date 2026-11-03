@@ -3,22 +3,21 @@ services:
 
   postgres:
     image: postgres:17
-    container_name: orders-postgres
     restart: unless-stopped
 
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-orders_db}
+      POSTGRES_USER: ${POSTGRES_USER:-orders_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orders_dev_password}
 
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-orders_user} -d ${POSTGRES_DB:-orders_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,16 +25,15 @@ services:
 
   rabbitmq:
     image: rabbitmq:management
-    container_name: orders-rabbitmq
     restart: unless-stopped
 
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-orders_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-rabbit_dev_password}
 
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_AMQP_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
 
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -46,6 +44,48 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  backend:
+    build:
+      context: ./backend/order-processing-api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-orders_db}
+      POSTGRES_USER: ${POSTGRES_USER:-orders_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orders_dev_password}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-orders_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-rabbit_dev_password}
+      ORDER_PROCESSING_DELAY: ${ORDER_PROCESSING_DELAY:-PT1S}
+      ORDER_PROCESSING_LOCK_TIMEOUT: ${ORDER_PROCESSING_LOCK_TIMEOUT:-PT5M}
+      ORDER_PROCESSING_FAIL_ITEM_DESCRIPTION_PREFIX: ${ORDER_PROCESSING_FAIL_ITEM_DESCRIPTION_PREFIX:-}
+      OUTBOX_POLL_INTERVAL_MS: ${OUTBOX_POLL_INTERVAL_MS:-1000}
+      ORDERS_MAX_PAGE_SIZE: ${ORDERS_MAX_PAGE_SIZE:-100}
+      ORDERS_RABBITMQ_EXCHANGE: ${ORDERS_RABBITMQ_EXCHANGE:-orders.exchange}
+      ORDERS_RABBITMQ_QUEUE: ${ORDERS_RABBITMQ_QUEUE:-orders.queue}
+      ORDERS_RABBITMQ_ROUTING_KEY: ${ORDERS_RABBITMQ_ROUTING_KEY:-orders.created}
+      ORDERS_RABBITMQ_DEAD_LETTER_EXCHANGE: ${ORDERS_RABBITMQ_DEAD_LETTER_EXCHANGE:-orders.dlx}
+      ORDERS_RABBITMQ_DEAD_LETTER_QUEUE: ${ORDERS_RABBITMQ_DEAD_LETTER_QUEUE:-orders.dlq}
+      ORDERS_RABBITMQ_DEAD_LETTER_ROUTING_KEY: ${ORDERS_RABBITMQ_DEAD_LETTER_ROUTING_KEY:-orders.failed}
+      ORDERS_RABBITMQ_RETRY_MAX_ATTEMPTS: ${ORDERS_RABBITMQ_RETRY_MAX_ATTEMPTS:-3}
+      ORDERS_RABBITMQ_RETRY_INITIAL_INTERVAL_MS: ${ORDERS_RABBITMQ_RETRY_INITIAL_INTERVAL_MS:-1000}
+      ORDERS_RABBITMQ_RETRY_MULTIPLIER: ${ORDERS_RABBITMQ_RETRY_MULTIPLIER:-2.0}
+      ORDERS_RABBITMQ_RETRY_MAX_INTERVAL_MS: ${ORDERS_RABBITMQ_RETRY_MAX_INTERVAL_MS:-10000}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
   postgres_data:
