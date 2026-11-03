@@ -73,11 +73,14 @@ class OrderServiceTest {
 
     @Test
     void rejectsUnsupportedSortProperties() {
+        String unsupportedProperty = "items.description";
+
         org.assertj.core.api.Assertions.assertThatThrownBy(() ->
                         orderService.findAll(null, null, null,
-                                PageRequest.of(0, 20, Sort.by("items.description"))))
+                                PageRequest.of(0, 20, Sort.by(unsupportedProperty))))
                 .isInstanceOf(InvalidOrderQueryException.class)
-                .hasMessageContaining("Ordenação não permitida");
+                .hasMessage("Campo de ordenação não permitido.")
+                .hasMessageNotContaining(unsupportedProperty);
 
         verifyNoInteractions(orderRepository);
     }
