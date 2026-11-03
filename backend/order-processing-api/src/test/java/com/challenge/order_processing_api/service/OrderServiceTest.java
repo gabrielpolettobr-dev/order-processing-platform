@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.challenge.order_processing_api.dto.request.CreateOrderItemRequest;
 import com.challenge.order_processing_api.dto.request.CreateOrderRequest;
+import com.challenge.order_processing_api.exception.InvalidOrderQueryException;
 import com.challenge.order_processing_api.model.Order;
 import com.challenge.order_processing_api.model.OutboxEvent;
 import com.challenge.order_processing_api.repository.OrderRepository;
@@ -64,7 +65,7 @@ class OrderServiceTest {
     void rejectsPageSizesAboveConfiguredLimit() {
         org.assertj.core.api.Assertions.assertThatThrownBy(() ->
                         orderService.findAll(null, null, null, PageRequest.of(0, 101)))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidOrderQueryException.class)
                 .hasMessageContaining("tamanho da página");
 
         verifyNoInteractions(orderRepository);
@@ -75,7 +76,7 @@ class OrderServiceTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() ->
                         orderService.findAll(null, null, null,
                                 PageRequest.of(0, 20, Sort.by("items.description"))))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidOrderQueryException.class)
                 .hasMessageContaining("Ordenação não permitida");
 
         verifyNoInteractions(orderRepository);
@@ -89,7 +90,7 @@ class OrderServiceTest {
                                 java.time.Instant.parse("2026-11-03T00:00:00Z"),
                                 java.time.Instant.parse("2026-11-02T00:00:00Z"),
                                 PageRequest.of(0, 20)))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidOrderQueryException.class)
                 .hasMessageContaining("createdFrom");
 
         verifyNoInteractions(orderRepository);

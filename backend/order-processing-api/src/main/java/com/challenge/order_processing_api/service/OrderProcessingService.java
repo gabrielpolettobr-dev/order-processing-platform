@@ -1,6 +1,7 @@
 package com.challenge.order_processing_api.service;
 
 import com.challenge.order_processing_api.config.OrdersProperties;
+import com.challenge.order_processing_api.exception.OrderProcessingException;
 import java.time.Duration;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -34,11 +35,11 @@ public class OrderProcessingService {
         try {
             simulateProcessing();
             if (!processingStateService.hasItems(orderId)) {
-                throw new IllegalStateException("Pedido sem itens não pode ser processado.");
+                throw new OrderProcessingException("Pedido sem itens não pode ser processado.");
             }
             if (!failureDescriptionPrefix.isBlank()
                     && processingStateService.hasItemDescriptionStartingWith(orderId, failureDescriptionPrefix)) {
-                throw new IllegalStateException("Falha de processamento simulada pela configuração.");
+                throw new OrderProcessingException("Falha de processamento simulada pela configuração.");
             }
             processingStateService.markCompleted(orderId);
             logger.info("Processamento do pedido {} concluído.", orderId);
@@ -56,7 +57,7 @@ public class OrderProcessingService {
             Thread.sleep(processingDelay.toMillis());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Processamento do pedido foi interrompido.", exception);
+            throw new OrderProcessingException("Processamento do pedido foi interrompido.", exception);
         }
     }
 }

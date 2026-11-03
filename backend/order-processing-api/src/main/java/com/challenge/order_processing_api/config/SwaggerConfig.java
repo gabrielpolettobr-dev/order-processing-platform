@@ -19,8 +19,8 @@ public class SwaggerConfig {
     @Bean
     OpenAPI orderProcessingOpenApi() {
         Schema<?> fieldErrorSchema = new ObjectSchema()
-                .addProperty("field", new StringSchema().description("Campo inválido."))
-                .addProperty("message", new StringSchema().description("Motivo da falha de validação."));
+                .addProperty("field", new StringSchema().description("Campo público da API que não passou na validação."))
+                .addProperty("message", new StringSchema().description("Orientação segura para corrigir o campo, sem repetir o valor enviado."));
 
         Schema<?> problemDetailSchema = new ObjectSchema()
                 .addProperty("type", new StringSchema().format("uri").description("URI que identifica o tipo do problema."))
@@ -29,9 +29,11 @@ public class SwaggerConfig {
                 .addProperty("detail", new StringSchema().description("Explicação específica desta ocorrência."))
                 .addProperty("instance", new StringSchema().format("uri").description("URI da requisição com erro."))
                 .addProperty("timestamp", new StringSchema().format("date-time").description("Instante em que ocorreu."))
+                .addProperty("errorId", new StringSchema().format("uuid")
+                        .description("Identificador desta ocorrência para correlação com os logs; também enviado no header X-Error-Id."))
                 .addProperty("fieldErrors", new ArraySchema().items(fieldErrorSchema)
-                        .description("Extensão com erros de validação por campo, quando aplicável."))
-                .required(List.of("title", "status", "detail", "instance"));
+                        .description("Extensão com erros de validação por campo público, quando aplicável."))
+                .required(List.of("title", "status", "detail", "instance", "timestamp", "errorId"));
 
         return new OpenAPI()
                 .components(new Components().addSchemas("ProblemDetail", problemDetailSchema))

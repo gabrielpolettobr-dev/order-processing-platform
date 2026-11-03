@@ -213,7 +213,53 @@ class OrderProcessingIntegrationTest {
                 "/api/orders?sort=items.description,asc", String.class);
 
         assertThat(tooLarge.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(tooLarge.getBody()).contains("\"detail\":\"O tamanho da página deve estar entre 1 e 100.\"");
         assertThat(unsupportedSort.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(unsupportedSort.getBody()).contains("Ordenação não permitida");
+    }
+
+    @Test
+    void mapsDomainOrderLimitViolationToBadRequestProblemDetail() {
+        CreateOrderRequest request = new CreateOrderRequest(
+                "Large Order",
+                "large-order@example.com",
+                List.of(new CreateOrderItemRequest(
+                        "High quantity",
+                        1_000_000,
+                        new BigDecimal("99999999999999999.99"))));
+
+        ResponseEntity<String> response = restTemplate.postForEntity("/api/orders", request, String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/problem+json");
+        assertThat(response.getBody()).contains("\"title\":\"Bad Request\"")
+                .contains("O subtotal do item excede o limite permitido.");
+    }
+
+    @Test
+    void returnsNotFoundProblemDetailForUnknownOrder() {
+        ResponseEntity<String> response = restTemplate.getForEntity(
+                "/api/orders/" + UUID.randomUUID(), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/problem+json");
+        assertThat(response.getBody()).contains("\"title\":\"Not Found\"")
+                .contains("não foi encontrado");
+    }
+
+    @Test
+    void doesNotExposeFrameworkErrorDetailsForUnknownRoute() {
+        ResponseEntity<String> response = restTemplate.getForEntity("/api/unknown-route", String.class);
+        String errorId = response.getHeaders().getFirst("X-Error-Id");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(errorId).isNotBlank();
+        assertThat(UUID.fromString(errorId)).isNotNull();
+        assertThat(response.getBody())
+                .contains("\"title\":\"Not Found\"")
+                .contains("\"detail\":\"A requisição não pôde ser processada.\"")
+                .contains("\"errorId\":\"" + errorId + "\"")
+                .doesNotContain("No static resource");
     }
 
     @Test
@@ -261,7 +307,10 @@ class OrderProcessingIntegrationTest {
                 .contains("\"status\":400")
                 .contains("\"detail\"")
                 .contains("\"instance\"")
-                .contains("\"fieldErrors\"");
+                .contains("\"fieldErrors\"")
+                .contains("\"field\":\"customerEmail\"")
+                .contains("Deve ser um e-mail válido.")
+                .doesNotContain("not-an-email");
     }
 
     @Test

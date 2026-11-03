@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.challenge.order_processing_api.config.OrdersProperties;
+import com.challenge.order_processing_api.exception.OrderProcessingException;
 import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,10 +65,10 @@ class OrderProcessingServiceTest {
     void releasesOrderForRetryWhenProcessingFails() {
         UUID orderId = UUID.randomUUID();
         when(stateService.markProcessing(orderId)).thenReturn(true);
-        when(stateService.hasItems(orderId)).thenThrow(new IllegalStateException("temporary failure"));
+        when(stateService.hasItems(orderId)).thenThrow(new OrderProcessingException("temporary failure"));
 
         assertThatThrownBy(() -> processingService.process(orderId))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(OrderProcessingException.class);
 
         verify(stateService).markReadyForRetry(orderId);
         verify(stateService, never()).markCompleted(orderId);

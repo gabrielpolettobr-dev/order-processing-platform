@@ -5,6 +5,8 @@ import com.challenge.order_processing_api.dto.response.OrderMessage;
 import com.challenge.order_processing_api.dto.response.OrderResponse;
 import com.challenge.order_processing_api.config.OrdersProperties;
 import com.challenge.order_processing_api.exception.OrderNotFoundException;
+import com.challenge.order_processing_api.exception.InvalidOrderQueryException;
+import com.challenge.order_processing_api.exception.OrderEventSerializationException;
 import com.challenge.order_processing_api.model.Order;
 import com.challenge.order_processing_api.model.OrderItem;
 import com.challenge.order_processing_api.model.OutboxEvent;
@@ -55,7 +57,8 @@ public class OrderService {
             String payload = objectMapper.writeValueAsString(new OrderMessage(order.getId()));
             outboxEventRepository.save(new OutboxEvent(order.getId(), "ORDER_CREATED", payload));
         } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Não foi possível serializar o evento do pedido.", exception);
+            throw new OrderEventSerializationException(
+                    "Não foi possível serializar o evento do pedido.", exception);
         }
         return OrderResponse.from(order);
     }
@@ -74,16 +77,17 @@ public class OrderService {
             Instant createdTo,
             Pageable pageable) {
         if (pageable.isUnpaged() || pageable.getPageSize() > paginationProperties.maxPageSize()) {
-            throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e "
+            throw new InvalidOrderQueryException("O tamanho da página deve estar entre 1 e "
                     + paginationProperties.maxPageSize() + ".");
         }
         pageable.getSort().forEach(order -> {
             if (!SORTABLE_FIELDS.contains(order.getProperty())) {
-                throw new IllegalArgumentException("Ordenação não permitida para o campo: " + order.getProperty());
+                throw new InvalidOrderQueryException(
+                        "Ordenação não permitida para o campo: " + order.getProperty());
             }
         });
         if (createdFrom != null && createdTo != null && createdFrom.isAfter(createdTo)) {
-            throw new IllegalArgumentException("createdFrom deve ser anterior ou igual a createdTo.");
+            throw new InvalidOrderQueryException("createdFrom deve ser anterior ou igual a createdTo.");
         }
 
         var filters = new ArrayList<Specification<Order>>();

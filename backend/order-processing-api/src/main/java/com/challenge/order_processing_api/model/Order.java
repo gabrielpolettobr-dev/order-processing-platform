@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import com.challenge.order_processing_api.exception.InvalidOrderException;
 import lombok.AccessLevel;
 import lombok.Getter;
 
@@ -66,7 +67,7 @@ public class Order {
                 .map(OrderItem::getSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (this.totalAmount.precision() > 19) {
-            throw new IllegalArgumentException("O valor total excede o limite permitido.");
+            throw new InvalidOrderException("O valor total excede o limite permitido.");
         }
     }
 

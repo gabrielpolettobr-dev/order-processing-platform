@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import com.challenge.order_processing_api.exception.InvalidOrderException;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -49,7 +50,7 @@ public class OrderItem {
         this.unitPrice = unitPrice;
         this.subtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
         if (this.subtotal.precision() > 19) {
-            throw new IllegalArgumentException("O subtotal do item excede o limite permitido.");
+            throw new InvalidOrderException("O subtotal do item excede o limite permitido.");
         }
     }
 
