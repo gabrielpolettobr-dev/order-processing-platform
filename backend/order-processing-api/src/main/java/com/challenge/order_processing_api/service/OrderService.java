@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OrderService {
 
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
     private static final Set<String> SORTABLE_FIELDS = Set.of(
             "id", "createdAt", "updatedAt", "customerName", "customerEmail", "totalAmount", "status");
 
@@ -61,6 +64,7 @@ public class OrderService {
             throw new OrderEventSerializationException(
                     "Não foi possível serializar o evento do pedido.", exception);
         }
+        logger.info("Pedido {} criado.", order.getId());
         return OrderResponse.from(order);
     }
 
