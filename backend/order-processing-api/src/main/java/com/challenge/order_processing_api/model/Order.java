@@ -10,6 +10,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,6 +21,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
+@Getter
 public class Order {
 
     @Id
@@ -44,6 +48,7 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("itemPosition ASC")
+    @Getter(AccessLevel.NONE)
     private List<OrderItem> items = new ArrayList<>();
 
     protected Order() {
@@ -65,6 +70,10 @@ public class Order {
         }
     }
 
+    public List<OrderItem> getItems() {
+        return List.copyOf(items);
+    }
+
     private void addItem(OrderItem item) {
         item.attachTo(this, items.size());
         items.add(item);
@@ -75,35 +84,4 @@ public class Order {
         this.updatedAt = Instant.now();
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public String getCustomerName() {
-        return customerName;
-    }
-
-    public String getCustomerEmail() {
-        return customerEmail;
-    }
-
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public List<OrderItem> getItems() {
-        return List.copyOf(items);
-    }
 }

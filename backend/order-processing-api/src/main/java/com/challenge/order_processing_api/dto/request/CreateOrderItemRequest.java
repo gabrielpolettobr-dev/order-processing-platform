@@ -10,7 +10,17 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record CreateOrderItemRequest(
-        @NotBlank @Size(max = 500) String description,
-        @Positive @Max(1_000_000) int quantity,
-        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 17, fraction = 2) BigDecimal unitPrice) {
+        @NotBlank
+        @Size(max = 500)
+        String description,
+
+        @Positive
+        @Max(1_000_000)
+        int quantity,
+
+        @NotNull
+        @DecimalMin(value = "0.01")
+        @Digits(integer = 17, fraction = 2)
+        BigDecimal unitPrice
+) {
 }
