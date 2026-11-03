@@ -143,9 +143,11 @@ public class GlobalExceptionHandler {
             case "NotBlank", "NotEmpty", "NotNull" -> "É obrigatório.";
             case "Email" -> "Deve ser um e-mail válido.";
             case "Size" -> "Tamanho fora do limite permitido.";
-            case "Positive", "DecimalMin" -> "Deve ser maior que zero.";
+            case "Positive" -> "Deve ser maior que zero.";
+            case "Min", "DecimalMin" -> "Não pode ser negativo.";
             case "Max" -> "Excede o limite permitido.";
             case "Digits" -> "Formato numérico inválido.";
+            case "Pattern" -> "Contém caracteres não permitidos.";
             default -> "Valor inválido.";
         };
     }
