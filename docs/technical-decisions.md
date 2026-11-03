@@ -1,0 +1,19 @@
+# Decisões técnicas do backend
+
+- **Monólito em camadas:** controladores tratam HTTP, serviços coordenam os casos de uso, repositories concentram persistência e entidades representam o domínio. DTOs mantêm os contratos HTTP separados das entidades JPA.
+- **Documentação da API:** `OrderApi` contém as anotações OpenAPI; `OrderController` implementa o contrato e mantém os mapeamentos de rota.
+- **Configuração centralizada:** configurações de RabbitMQ, Swagger/OpenAPI e agendamento ficam no pacote `config`. Erros usam `ProblemDetail` (RFC 9457), são enviados como `application/problem+json` e incluem as extensões `timestamp` e `fieldErrors` quando aplicável.
+- **Persistência:** PostgreSQL usa UUID, `NUMERIC(19,2)` e timestamps com timezone. Flyway cria e versiona o schema; Hibernate valida o schema sem criá-lo automaticamente.
+- **Total do pedido:** subtotais e total são calculados no domínio com `BigDecimal`. O cliente não envia total confiável.
+- **Consistência com RabbitMQ:** pedido e evento Outbox são gravados na mesma transação. O publicador reivindica eventos com `FOR UPDATE SKIP LOCKED`, publica e só marca como publicado após confirmação do broker. Instâncias concorrentes não reivindicam a mesma linha ao mesmo tempo. Uma queda entre a confirmação do broker e o commit do Outbox ainda pode ocasionar reenvio; o consumer trata mensagens repetidas de forma idempotente.
+- **Retry e DLQ:** o listener repete o processamento conforme os parâmetros configurados. Ao esgotar as tentativas, marca o pedido como `FAILED` e rejeita a mensagem para roteamento à fila `orders.dlq`.
+- **Concorrência e idempotência:** atualizações de estado usam lock pessimista no banco. Entregas repetidas de pedidos em processamento recente ou terminal são ignoradas; um estado `PROCESSING` antigo pode ser retomado após o timeout configurável, permitindo recuperação de interrupções abruptas.
+- **Processamento demonstrativo:** o serviço simula o trabalho com atraso configurável (`ORDER_PROCESSING_DELAY`, padrão `PT1S`), sem integração externa ou gateway de pagamento. Uma falha reproduzível pode ser ativada em testes por `ORDER_PROCESSING_FAIL_ITEM_DESCRIPTION_PREFIX`; o valor padrão vazio desativa a falha.
+- **Paginação e ordenação:** tamanho máximo padrão de 100 registros por página (`ORDERS_MAX_PAGE_SIZE`). A API aceita ordenação apenas em campos explicitamente permitidos para evitar consultas inválidas.
+- **Execução:** `compose.yaml` inicia API, PostgreSQL e RabbitMQ nesta etapa backend-first. A interface Angular ainda não foi conectada ao Compose.
+
+## Limitações e evoluções
+
+- O processamento atual não executa efeitos externos; se forem adicionadas operações com efeitos colaterais, elas precisarão de idempotência por operação.
+- A configuração inicial é voltada a um ambiente local de avaliação. Segredos padrão são apenas de desenvolvimento e devem ser substituídos em qualquer ambiente compartilhado.
+- A suíte de integração Testcontainers requer um daemon Docker ativo; esses testes são ignorados automaticamente quando o daemon não está disponível. Uma evolução possível é adicionar métricas e política de retenção/monitoramento para a Outbox e a DLQ.
