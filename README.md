@@ -1,6 +1,6 @@
 # Order Processing Platform
 
-Plataforma de criação e processamento assíncrono de pedidos. Nesta etapa, o backend Spring Boot, PostgreSQL e RabbitMQ estão implementados; a interface Angular será adicionada em uma etapa posterior.
+Plataforma de criação e processamento assíncrono de pedidos. O ambiente inclui API Spring Boot, PostgreSQL, RabbitMQ e interface Angular, integrados pelo Docker Compose.
 
 ## Executar o backend com Docker
 
@@ -10,10 +10,11 @@ Pré-requisito: Docker Desktop com Docker Compose. Na raiz do repositório, exec
 docker compose up --build
 ```
 
-O Compose inicia PostgreSQL, RabbitMQ e API, aguarda os health checks das dependências e executa as migrations Flyway automaticamente. Para interromper, use `Ctrl+C` ou `docker compose down`. Para iniciar novamente, execute `docker compose up --build`. Os dados do PostgreSQL e do RabbitMQ permanecem nos volumes nomeados; `docker compose down -v` os remove.
+O Compose constrói e inicia frontend, API, PostgreSQL e RabbitMQ, aguarda os health checks das dependências e executa as migrations Flyway automaticamente. Para interromper, use `Ctrl+C` ou `docker compose down`. Para iniciar novamente, execute `docker compose up --build`. Os dados do PostgreSQL e do RabbitMQ permanecem nos volumes nomeados; `docker compose down -v` os remove.
 
 | Serviço | URL/porta local | Credenciais padrão |
 |---|---|---|
+| Frontend | `http://localhost:4200` | — |
 | API | `http://localhost:8080` | — |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` | — |
 | OpenAPI JSON | `http://localhost:8080/api-docs` | — |
@@ -23,6 +24,18 @@ O Compose inicia PostgreSQL, RabbitMQ e API, aguarda os health checks das depend
 | RabbitMQ Management | `http://localhost:15672` | `orders_user` / `rabbit_dev_password` |
 
 As credenciais e parâmetros podem ser alterados pelas variáveis de ambiente do Compose. O arquivo `.env.example` contém as variáveis de banco, RabbitMQ e processamento; `OUTBOX_CLAIM_TIMEOUT` controla por quanto tempo um evento fica reservado antes de poder ser recuperado por outra execução. Valores padrão de desenvolvimento permitem iniciar sem criar um `.env`.
+
+O frontend Angular é servido pelo Nginx e encaminha `/api` para o backend dentro da rede Docker. Para desenvolvimento separado, consulte [frontend/order-processing-web/README.md](frontend/order-processing-web/README.md).
+
+## Executar testes do frontend
+
+Com Node.js instalado, execute na pasta `frontend/order-processing-web`:
+
+```powershell
+npm ci
+npm test -- --watch=false
+npm run build
+```
 
 ## Executar testes do backend
 
@@ -55,5 +68,7 @@ Exemplos e formato de erros: [docs/api-documentation.md](docs/api-documentation.
 O backend segue camadas: `controller` (rotas HTTP e contrato `OrderApi`), `service` (casos de uso), `repository` (persistência), `model` (entidades e status), além de `dto`, `exception`, `messaging` e `config`. A interface `OrderApi` documenta os contratos com OpenAPI e é implementada por `OrderController`; os caminhos e mapeamentos HTTP ficam no controller. As propriedades específicas da aplicação são centralizadas em `OrdersProperties` (`@ConfigurationProperties`), com valores em `application.yaml` sobrescritos por ambiente. Erros seguem o padrão RFC 9457 com `ProblemDetail` e são descritos no OpenAPI como `application/problem+json`.
 
 A criação persiste pedido, itens e evento Outbox na mesma transação. Um publicador separado envia o evento ao RabbitMQ; o consumidor atualiza o status e ignora entregas duplicadas de pedidos em processamento recente ou já finalizados. Após as tentativas configuradas, a mensagem é roteada para `orders.dlq` e o pedido é marcado como `FAILED`. A topologia RabbitMQ é declarada pela aplicação. Detalhes e limitações: [docs/technical-decisions.md](docs/technical-decisions.md).
+
+O frontend usa componentes standalone organizados por funcionalidade, modelos tipados e um service para a API REST. A listagem e a tela de detalhes fazem polling a cada 3 segundos enquanto existem pedidos pendentes; filtros, ordenação e paginação são enviados à API.
 
 Diagramas: [arquitetura](docs/architecture.md), [fluxo de processamento](docs/processing-flow.md) e [modelo do banco](docs/database-model.md).
