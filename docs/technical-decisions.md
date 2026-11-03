@@ -13,7 +13,7 @@
 - **Concorrência e idempotência:** atualizações de estado usam lock pessimista no banco. Entregas repetidas de pedidos em processamento recente ou terminal são ignoradas; um estado `PROCESSING` antigo pode ser retomado após o timeout configurável, permitindo recuperação de interrupções abruptas.
 - **Processamento demonstrativo:** o serviço simula o trabalho com atraso configurável (`ORDER_PROCESSING_DELAY`, padrão `PT1S`), sem integração externa ou gateway de pagamento. Uma falha reproduzível pode ser ativada em testes por `ORDER_PROCESSING_FAIL_ITEM_DESCRIPTION_PREFIX`; o valor padrão vazio desativa a falha.
 - **Paginação e ordenação:** tamanho máximo padrão de 100 registros por página (`ORDERS_MAX_PAGE_SIZE`). A API aceita ordenação apenas em campos explicitamente permitidos para evitar consultas inválidas.
-- **Execução:** `compose.yaml` inicia API, PostgreSQL e RabbitMQ nesta etapa backend-first. A interface Angular ainda não foi conectada ao Compose.
+- **Execução:** `compose.yaml` inicia frontend Angular, API, PostgreSQL e RabbitMQ. O frontend é servido pelo Nginx e encaminha chamadas `/api` ao backend; health checks e dependências do Compose controlam a ordem de inicialização, enquanto volumes nomeados preservam os dados do PostgreSQL e RabbitMQ.
 
 ## Limitações e evoluções
 
