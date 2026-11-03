@@ -1,3 +1,73 @@
 spring:
   application:
     name: order-processing-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:orders_db}}
+    username: ${POSTGRES_USER:orders_user}
+    password: ${POSTGRES_PASSWORD:orders_dev_password}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_DEFAULT_USER:orders_user}
+    password: ${RABBITMQ_DEFAULT_PASS:rabbit_dev_password}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  task:
+    scheduling:
+      pool:
+        size: 1
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+orders:
+  processing:
+    delay: ${ORDER_PROCESSING_DELAY:PT1S}
+    lock-timeout: ${ORDER_PROCESSING_LOCK_TIMEOUT:PT5M}
+    fail-item-description-prefix: ${ORDER_PROCESSING_FAIL_ITEM_DESCRIPTION_PREFIX:}
+  pagination:
+    max-page-size: ${ORDERS_MAX_PAGE_SIZE:100}
+  outbox:
+    poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:1000}
+  rabbitmq:
+    exchange: ${ORDERS_RABBITMQ_EXCHANGE:orders.exchange}
+    queue: ${ORDERS_RABBITMQ_QUEUE:orders.queue}
+    routing-key: ${ORDERS_RABBITMQ_ROUTING_KEY:orders.created}
+    dead-letter-exchange: ${ORDERS_RABBITMQ_DEAD_LETTER_EXCHANGE:orders.dlx}
+    dead-letter-queue: ${ORDERS_RABBITMQ_DEAD_LETTER_QUEUE:orders.dlq}
+    dead-letter-routing-key: ${ORDERS_RABBITMQ_DEAD_LETTER_ROUTING_KEY:orders.failed}
+    retry:
+      max-attempts: ${ORDERS_RABBITMQ_RETRY_MAX_ATTEMPTS:3}
+      initial-interval-ms: ${ORDERS_RABBITMQ_RETRY_INITIAL_INTERVAL_MS:1000}
+      multiplier: ${ORDERS_RABBITMQ_RETRY_MULTIPLIER:2.0}
+      max-interval-ms: ${ORDERS_RABBITMQ_RETRY_MAX_INTERVAL_MS:10000}
