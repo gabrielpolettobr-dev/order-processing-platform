@@ -1,11 +1,11 @@
 package com.challenge.order_processing_api.service;
 
+import com.challenge.order_processing_api.config.OrdersProperties;
 import com.challenge.order_processing_api.repository.OutboxEventRepository;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +17,8 @@ public class OutboxClaimService {
 
     public OutboxClaimService(
             OutboxEventRepository outboxEventRepository,
-            @Value("${orders.outbox.claim-timeout:PT30S}") Duration claimTimeout) {
+            OrdersProperties ordersProperties) {
+        Duration claimTimeout = ordersProperties.outbox().claimTimeout();
         if (claimTimeout.isNegative() || claimTimeout.isZero()) {
             throw new IllegalArgumentException("O tempo de reserva da Outbox deve ser positivo.");
         }

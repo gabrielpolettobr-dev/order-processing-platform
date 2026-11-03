@@ -52,7 +52,7 @@ Exemplos e formato de erros: [docs/api-documentation.md](docs/api-documentation.
 
 ## Arquitetura do backend
 
-O backend segue camadas: `controller` (rotas HTTP e contrato `OrderApi`), `service` (casos de uso), `repository` (persistência), `model` (entidades e status), além de `dto`, `exception`, `messaging` e `config`. A interface `OrderApi` documenta os contratos com OpenAPI e é implementada por `OrderController`; os caminhos e mapeamentos HTTP ficam no controller. Erros seguem o padrão RFC 9457 com `ProblemDetail` e são descritos no OpenAPI como `application/problem+json`.
+O backend segue camadas: `controller` (rotas HTTP e contrato `OrderApi`), `service` (casos de uso), `repository` (persistência), `model` (entidades e status), além de `dto`, `exception`, `messaging` e `config`. A interface `OrderApi` documenta os contratos com OpenAPI e é implementada por `OrderController`; os caminhos e mapeamentos HTTP ficam no controller. As propriedades específicas da aplicação são centralizadas em `OrdersProperties` (`@ConfigurationProperties`), com valores em `application.yaml` sobrescritos por ambiente. Erros seguem o padrão RFC 9457 com `ProblemDetail` e são descritos no OpenAPI como `application/problem+json`.
 
 A criação persiste pedido, itens e evento Outbox na mesma transação. Um publicador separado envia o evento ao RabbitMQ; o consumidor atualiza o status e ignora entregas duplicadas de pedidos em processamento recente ou já finalizados. Após as tentativas configuradas, a mensagem é roteada para `orders.dlq` e o pedido é marcado como `FAILED`. A topologia RabbitMQ é declarada pela aplicação. Detalhes e limitações: [docs/technical-decisions.md](docs/technical-decisions.md).
 

@@ -1,10 +1,10 @@
 package com.challenge.order_processing_api.service;
 
+import com.challenge.order_processing_api.config.OrdersProperties;
 import java.time.Duration;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,11 +18,10 @@ public class OrderProcessingService {
 
     public OrderProcessingService(
             OrderProcessingStateService processingStateService,
-            @Value("${orders.processing.delay:PT1S}") Duration processingDelay,
-            @Value("${orders.processing.fail-item-description-prefix:}") String failureDescriptionPrefix) {
+            OrdersProperties ordersProperties) {
         this.processingStateService = processingStateService;
-        this.processingDelay = processingDelay;
-        this.failureDescriptionPrefix = failureDescriptionPrefix;
+        this.processingDelay = ordersProperties.processing().delay();
+        this.failureDescriptionPrefix = ordersProperties.processing().failItemDescriptionPrefix();
     }
 
     public void process(UUID orderId) {

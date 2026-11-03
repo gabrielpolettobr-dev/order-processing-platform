@@ -1,5 +1,6 @@
 package com.challenge.order_processing_api.messaging;
 
+import com.challenge.order_processing_api.config.OrdersProperties;
 import com.challenge.order_processing_api.dto.response.OrderMessage;
 import com.challenge.order_processing_api.service.ClaimedOutboxEvent;
 import com.challenge.order_processing_api.service.OutboxClaimService;
@@ -12,8 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,16 +30,14 @@ public class OutboxPublisher {
             OutboxClaimService outboxClaimService,
             RabbitTemplate rabbitTemplate,
             ObjectMapper objectMapper,
-            @Value("${orders.rabbitmq.exchange}") String exchange,
-            @Value("${orders.rabbitmq.routing-key}") String routingKey) {
+            OrdersProperties ordersProperties) {
         this.outboxClaimService = outboxClaimService;
         this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
-        this.exchange = exchange;
-        this.routingKey = routingKey;
+        this.exchange = ordersProperties.rabbitmq().exchange();
+        this.routingKey = ordersProperties.rabbitmq().routingKey();
     }
 
-    @Scheduled(fixedDelayString = "${orders.outbox.poll-interval-ms:1000}")
     public void publishPendingEvents() {
         Optional<ClaimedOutboxEvent> nextEvent = outboxClaimService.claimNext();
         while (nextEvent.isPresent()) {

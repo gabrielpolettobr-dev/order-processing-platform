@@ -1,5 +1,6 @@
 package com.challenge.order_processing_api.service;
 
+import com.challenge.order_processing_api.config.OrdersProperties;
 import com.challenge.order_processing_api.exception.OrderNotFoundException;
 import com.challenge.order_processing_api.model.Order;
 import com.challenge.order_processing_api.model.OrderStatus;
@@ -7,7 +8,6 @@ import com.challenge.order_processing_api.repository.OrderRepository;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +17,9 @@ public class OrderProcessingStateService {
     private final OrderRepository orderRepository;
     private final Duration processingLockTimeout;
 
-    public OrderProcessingStateService(
-            OrderRepository orderRepository,
-            @Value("${orders.processing.lock-timeout:PT5M}") Duration processingLockTimeout) {
+    public OrderProcessingStateService(OrderRepository orderRepository, OrdersProperties ordersProperties) {
         this.orderRepository = orderRepository;
-        this.processingLockTimeout = processingLockTimeout;
+        this.processingLockTimeout = ordersProperties.processing().lockTimeout();
     }
 
     @Transactional

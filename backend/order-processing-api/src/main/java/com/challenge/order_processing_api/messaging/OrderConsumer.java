@@ -14,7 +14,7 @@ public class OrderConsumer {
         this.orderProcessingService = orderProcessingService;
     }
 
-    @RabbitListener(queues = "${orders.rabbitmq.queue}")
+    @RabbitListener(queues = "#{@ordersQueue.name}")
     public void consume(OrderMessage message) {
         orderProcessingService.process(message.orderId());
     }

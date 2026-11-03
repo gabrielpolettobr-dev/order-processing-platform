@@ -1,5 +1,6 @@
 package com.challenge.order_processing_api.service;
 
+import static com.challenge.order_processing_api.TestOrdersProperties.defaults;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -39,7 +40,7 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, outboxEventRepository, objectMapper, 100);
+        orderService = new OrderService(orderRepository, outboxEventRepository, objectMapper, defaults());
     }
 
     @Test

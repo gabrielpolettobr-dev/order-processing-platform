@@ -7,6 +7,7 @@ import com.challenge.order_processing_api.dto.request.CreateOrderItemRequest;
 import com.challenge.order_processing_api.dto.request.CreateOrderRequest;
 import com.challenge.order_processing_api.dto.response.OrderMessage;
 import com.challenge.order_processing_api.dto.response.OrderResponse;
+import com.challenge.order_processing_api.config.OrdersProperties;
 import com.challenge.order_processing_api.model.Order;
 import com.challenge.order_processing_api.model.OrderItem;
 import com.challenge.order_processing_api.model.OrderStatus;
@@ -106,6 +107,9 @@ class OrderProcessingIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private OrdersProperties ordersProperties;
+
     @BeforeEach
     void cleanDatabaseAndQueues() {
         jdbcTemplate.update("DELETE FROM outbox_events");
@@ -143,6 +147,15 @@ class OrderProcessingIntegrationTest {
                 .singleElement()
                 .extracting(OutboxEvent::getPublishedAt)
                 .isNotNull();
+    }
+
+    @Test
+    void bindsOrderConfigurationFromExternalProperties() {
+        assertThat(ordersProperties.processing().delay()).isEqualTo(Duration.ZERO);
+        assertThat(ordersProperties.processing().failItemDescriptionPrefix()).isEqualTo("FAIL-");
+        assertThat(ordersProperties.pagination().maxPageSize()).isEqualTo(100);
+        assertThat(ordersProperties.outbox().pollIntervalMs()).isEqualTo(60_000);
+        assertThat(ordersProperties.rabbitmq().retry().maxAttempts()).isEqualTo(3);
     }
 
     @Test

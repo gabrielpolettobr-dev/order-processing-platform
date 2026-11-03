@@ -6,7 +6,6 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,44 +13,43 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitTopology {
 
     @Bean
-    DirectExchange ordersExchange(@Value("${orders.rabbitmq.exchange}") String exchange) {
-        return new DirectExchange(exchange, true, false);
+    DirectExchange ordersExchange(OrdersProperties properties) {
+        return new DirectExchange(properties.rabbitmq().exchange(), true, false);
     }
 
     @Bean
-    DirectExchange ordersDeadLetterExchange(@Value("${orders.rabbitmq.dead-letter-exchange}") String exchange) {
-        return new DirectExchange(exchange, true, false);
+    DirectExchange ordersDeadLetterExchange(OrdersProperties properties) {
+        return new DirectExchange(properties.rabbitmq().deadLetterExchange(), true, false);
     }
 
     @Bean
     Queue ordersQueue(
-            @Value("${orders.rabbitmq.queue}") String queue,
-            @Value("${orders.rabbitmq.dead-letter-exchange}") String deadLetterExchange,
-            @Value("${orders.rabbitmq.dead-letter-routing-key}") String deadLetterRoutingKey) {
-        return QueueBuilder.durable(queue)
-                .deadLetterExchange(deadLetterExchange)
-                .deadLetterRoutingKey(deadLetterRoutingKey)
+            OrdersProperties properties) {
+        return QueueBuilder.durable(properties.rabbitmq().queue())
+                .deadLetterExchange(properties.rabbitmq().deadLetterExchange())
+                .deadLetterRoutingKey(properties.rabbitmq().deadLetterRoutingKey())
                 .build();
     }
 
     @Bean
-    Queue ordersDeadLetterQueue(@Value("${orders.rabbitmq.dead-letter-queue}") String queue) {
-        return QueueBuilder.durable(queue).build();
+    Queue ordersDeadLetterQueue(OrdersProperties properties) {
+        return QueueBuilder.durable(properties.rabbitmq().deadLetterQueue()).build();
     }
 
     @Bean
     Binding ordersBinding(
             @Qualifier("ordersQueue") Queue ordersQueue,
             @Qualifier("ordersExchange") DirectExchange ordersExchange,
-            @Value("${orders.rabbitmq.routing-key}") String routingKey) {
-        return BindingBuilder.bind(ordersQueue).to(ordersExchange).with(routingKey);
+            OrdersProperties properties) {
+        return BindingBuilder.bind(ordersQueue).to(ordersExchange).with(properties.rabbitmq().routingKey());
     }
 
     @Bean
     Binding ordersDeadLetterBinding(
             @Qualifier("ordersDeadLetterQueue") Queue ordersDeadLetterQueue,
             @Qualifier("ordersDeadLetterExchange") DirectExchange ordersDeadLetterExchange,
-            @Value("${orders.rabbitmq.dead-letter-routing-key}") String routingKey) {
-        return BindingBuilder.bind(ordersDeadLetterQueue).to(ordersDeadLetterExchange).with(routingKey);
+            OrdersProperties properties) {
+        return BindingBuilder.bind(ordersDeadLetterQueue).to(ordersDeadLetterExchange)
+                .with(properties.rabbitmq().deadLetterRoutingKey());
     }
 }

@@ -1,10 +1,12 @@
 package com.challenge.order_processing_api.service;
 
+import static com.challenge.order_processing_api.TestOrdersProperties.defaults;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.challenge.order_processing_api.config.OrdersProperties;
 import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +25,17 @@ class OrderProcessingServiceTest {
 
     @BeforeEach
     void setUp() {
-        processingService = new OrderProcessingService(stateService, Duration.ZERO, "");
+        OrdersProperties baseProperties = defaults();
+        OrdersProperties.Processing processingProperties = new OrdersProperties.Processing(
+                Duration.ZERO,
+                baseProperties.processing().lockTimeout(),
+                baseProperties.processing().failItemDescriptionPrefix());
+        OrdersProperties properties = new OrdersProperties(
+                processingProperties,
+                baseProperties.pagination(),
+                baseProperties.outbox(),
+                baseProperties.rabbitmq());
+        processingService = new OrderProcessingService(stateService, properties);
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.challenge.order_processing_api.service;
 import com.challenge.order_processing_api.dto.request.CreateOrderRequest;
 import com.challenge.order_processing_api.dto.response.OrderMessage;
 import com.challenge.order_processing_api.dto.response.OrderResponse;
+import com.challenge.order_processing_api.config.OrdersProperties;
 import com.challenge.order_processing_api.exception.OrderNotFoundException;
 import com.challenge.order_processing_api.model.Order;
 import com.challenge.order_processing_api.model.OrderItem;
@@ -21,7 +22,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class OrderService {
@@ -32,17 +32,17 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
-    private final int maxPageSize;
+    private final OrdersProperties.Pagination paginationProperties;
 
     public OrderService(
             OrderRepository orderRepository,
             OutboxEventRepository outboxEventRepository,
             ObjectMapper objectMapper,
-            @Value("${orders.pagination.max-page-size:100}") int maxPageSize) {
+            OrdersProperties ordersProperties) {
         this.orderRepository = orderRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
-        this.maxPageSize = maxPageSize;
+        this.paginationProperties = ordersProperties.pagination();
     }
 
     @Transactional
@@ -73,8 +73,9 @@ public class OrderService {
             Instant createdFrom,
             Instant createdTo,
             Pageable pageable) {
-        if (pageable.isUnpaged() || pageable.getPageSize() > maxPageSize) {
-            throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e " + maxPageSize + ".");
+        if (pageable.isUnpaged() || pageable.getPageSize() > paginationProperties.maxPageSize()) {
+            throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e "
+                    + paginationProperties.maxPageSize() + ".");
         }
         pageable.getSort().forEach(order -> {
             if (!SORTABLE_FIELDS.contains(order.getProperty())) {

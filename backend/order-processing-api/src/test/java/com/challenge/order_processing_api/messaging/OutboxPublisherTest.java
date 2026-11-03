@@ -1,5 +1,6 @@
 package com.challenge.order_processing_api.messaging;
 
+import static com.challenge.order_processing_api.TestOrdersProperties.defaults;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -47,7 +48,7 @@ class OutboxPublisherTest {
                 any(CorrelationData.class));
 
         OutboxPublisher publisher = new OutboxPublisher(
-                claimService, rabbitTemplate, new ObjectMapper(), "orders.exchange", "orders.created");
+                claimService, rabbitTemplate, new ObjectMapper(), defaults());
 
         publisher.publishPendingEvents();
         verify(claimService, org.mockito.Mockito.never()).markPublished(firstClaim);
